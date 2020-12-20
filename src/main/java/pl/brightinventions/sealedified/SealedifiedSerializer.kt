@@ -1,36 +1,47 @@
 package pl.brightinventions.sealedified
 
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialDescriptor
-import kotlinx.serialization.internal.AbstractPolymorphicSerializer
-import kotlin.reflect.KClass
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
 
-@InternalSerializationApi
 class SealedifiedSerializer<T : Any>(
-    private val base: KClass<T>,
     private val knownSerializer: KSerializer<T>
-) : AbstractPolymorphicSerializer<Sealedified<T>>(), KSerializer<Sealedified<T>> {
+) : KSerializer<Sealedified<T>> {
 
     override val descriptor: SerialDescriptor = knownSerializer.descriptor
-    override val baseClass: KClass<Sealedified<T>>
-        get() = Sealedified::class
 
-    /*override fun deserialize(decoder: Decoder): Sealedified<T> =
-        try {
-            val known = knownSerializer.deserialize(decoder)
+    override fun deserialize(decoder: Decoder): Sealedified<T> {
+        if (decoder !is JsonDecoder) {
+            throw SerializationException("${SealedifiedSerializer::class.simpleName} only supports JSON serialization")
+        }
+
+        val jsonElement = decoder.decodeJsonElement()
+
+        return try {
+            val known = decoder.json.decodeFromJsonElement(knownSerializer, jsonElement)
             Sealedified.Known(known)
         } catch (e: SerializationException) {
-            val unknown = JsonObjectSerializer.deserialize(decoder)
-            Sealedified.Unknown(unknown)
+            if (jsonElement !is JsonObject) {
+                throw SerializationException(
+                    "${SealedifiedSerializer::class.simpleName} only supports ${JsonObject::class.simpleName}",
+                    e
+                )
+            }
+            Sealedified.Unknown(jsonElement)
         }
+    }
 
     override fun serialize(encoder: Encoder, value: Sealedified<T>) {
         when (value) {
-            is Sealedified.Known -> knownSerializer.serialize(encoder, value.value)
-            is Sealedified.Unknown -> JsonObjectSerializer.serialize(encoder, value.jsonElement)
+            is Sealedified.Known -> encoder.encodeSerializableValue(knownSerializer, value.value)
+            is Sealedified.Unknown -> encoder.encodeSerializableValue(JsonObject.serializer(), value.jsonObject)
         }
-    }*/
+    }
 }
 
-//inline fun <reified T> sealedifiedSerializer(): KSerializer<Sealedified<T>> = SealedifiedSerializer()
+inline fun <reified T : Any> sealedifiedSerializer(other: KSerializer<T>): KSerializer<Sealedified<T>> =
+    SealedifiedSerializer(other)
