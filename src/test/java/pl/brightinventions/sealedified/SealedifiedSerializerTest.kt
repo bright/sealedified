@@ -182,4 +182,14 @@ internal class SealedifiedSerializerTest {
     fun `wrapper with null should be deserialized`() {
         json.decodeFromString(FruitWrapper.serializer(), wrapperNullSerialized).shouldEqual(wrapperNull)
     }
+
+    @Test
+    fun `apple should be known`() {
+        appleSealedified.knownOrNull().shouldEqual(apple)
+    }
+
+    @Test
+    fun `unknown fruit should be null`() {
+        unknownFruit.knownOrNull().shouldEqual(null)
+    }
 }
