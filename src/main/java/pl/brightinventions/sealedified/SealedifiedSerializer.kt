@@ -1,11 +1,7 @@
 package pl.brightinventions.sealedified
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.*
+import kotlinx.serialization.json.JsonInput
 import kotlinx.serialization.json.JsonObject
 
 class SealedifiedSerializer<T : Any>(
@@ -15,16 +11,20 @@ class SealedifiedSerializer<T : Any>(
     override val descriptor: SerialDescriptor = knownSerializer.descriptor
 
     override fun deserialize(decoder: Decoder): Sealedified<T> {
-        if (decoder !is JsonDecoder) {
+        if (decoder !is JsonInput) {
             throw SerializationException("${SealedifiedSerializer::class.simpleName} only supports JSON serialization")
         }
 
-        val jsonElement = decoder.decodeJsonElement()
+        val jsonElement = decoder.decodeJson()
 
         return try {
-            val known = decoder.json.decodeFromJsonElement(knownSerializer, jsonElement)
+            // Copy the original content first because the class discriminator may get removed from the map.
+            val jsonObject = jsonElement.jsonObject
+            val copiedMap = HashMap(jsonObject)
+            val copiedJsonObject = JsonObject(copiedMap)
+            val known = decoder.json.fromJson(knownSerializer, copiedJsonObject)
             Sealedified.Known(known)
-        } catch (e: SerializationException) {
+        } catch (e: Exception) {
             if (jsonElement !is JsonObject) {
                 throw SerializationException(
                     "${SealedifiedSerializer::class.simpleName} only supports ${JsonObject::class.simpleName}",

@@ -4,6 +4,7 @@ package pl.brightinventions.sealedified
 
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Assertions
@@ -65,13 +66,13 @@ internal class SealedifiedSerializerTest {
     private val tree: Sealedified<Fruit> = Sealedified.Known(
         Fruit.Tree(
             age = 100,
-            fruits = listOf(
+            fruits = listOf<Sealedified<Fruit>>(
                 Sealedified.Known(Fruit.Apple(1)),
                 Sealedified.Known(Fruit.Orange("John")),
                 Sealedified.Known(
                     Fruit.Tree(
                         age = 50,
-                        fruits = listOf(
+                        fruits = listOf<Sealedified<Fruit>>(
                             Sealedified.Known(Fruit.Orange(null)),
                             unknownFruit,
                             Sealedified.Known(Fruit.Apple(2))
@@ -132,55 +133,54 @@ internal class SealedifiedSerializerTest {
         }
     """.trimIndent()
 
-    private val json = Json {
-        prettyPrint = true
-    }
+    private val jsonConfig = JsonConfiguration.Stable.copy(prettyPrint = true)
+    private val json = Json(jsonConfig)
 
     @Test
     fun `apple should be serialized`() {
-        json.encodeToString(Fruit.SealedifiedSerializer, appleSealedified).shouldEqual(appleSerialized)
+        json.stringify(Fruit.SealedifiedSerializer, appleSealedified).shouldEqual(appleSerialized)
     }
 
     @Test
     fun `apple should be deserialized`() {
-        json.decodeFromString(Fruit.SealedifiedSerializer, appleSerialized).shouldEqual(appleSealedified)
+        json.parse(Fruit.SealedifiedSerializer, appleSerialized).shouldEqual(appleSealedified)
     }
 
     @Test
     fun `unknown fruit should be serialized`() {
-        json.encodeToString(Fruit.SealedifiedSerializer, unknownFruit).shouldEqual(unknownFruitSerialized)
+        json.stringify(Fruit.SealedifiedSerializer, unknownFruit).shouldEqual(unknownFruitSerialized)
     }
 
     @Test
     fun `unknown fruit should be deserialized`() {
-        json.decodeFromString(Fruit.SealedifiedSerializer, unknownFruitSerialized).shouldEqual(unknownFruit)
+        json.parse(Fruit.SealedifiedSerializer, unknownFruitSerialized).shouldEqual(unknownFruit)
     }
 
     @Test
     fun `tree should be serialized`() {
-        json.encodeToString(Fruit.SealedifiedSerializer, tree).shouldEqual(treeSerialized)
+        json.stringify(Fruit.SealedifiedSerializer, tree).shouldEqual(treeSerialized)
     }
 
     @Test
     fun `tree should be deserialized`() {
-        json.decodeFromString(Fruit.SealedifiedSerializer, treeSerialized).shouldEqual(tree)
+        json.parse(Fruit.SealedifiedSerializer, treeSerialized).shouldEqual(tree)
     }
 
     @Test
     fun `JSON array should not be deserialized`() {
         Assertions.assertThrows(SerializationException::class.java) {
-            json.decodeFromString(Fruit.SealedifiedSerializer, incorrectJsonTypeSerialized)
+            json.parse(Fruit.SealedifiedSerializer, incorrectJsonTypeSerialized)
         }
     }
 
     @Test
     fun `wrapper with null should be serialized`() {
-        json.encodeToString(FruitWrapper.serializer(), wrapperNull).shouldEqual(wrapperNullSerialized)
+        json.stringify(FruitWrapper.serializer(), wrapperNull).shouldEqual(wrapperNullSerialized)
     }
 
     @Test
     fun `wrapper with null should be deserialized`() {
-        json.decodeFromString(FruitWrapper.serializer(), wrapperNullSerialized).shouldEqual(wrapperNull)
+        json.parse(FruitWrapper.serializer(), wrapperNullSerialized).shouldEqual(wrapperNull)
     }
 
     @Test
