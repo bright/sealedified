@@ -1,8 +1,8 @@
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
 buildscript {
-    ext.kotlin_version = "1.4.21"
-    repositories { jcenter() }
+    ext.kotlin_version = "1.5.30"
+    repositories {
+        mavenCentral()
+    }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
     }
@@ -10,46 +10,18 @@ buildscript {
 
 plugins {
     id "org.jetbrains.kotlin.jvm" version "$kotlin_version"
-    id "org.jetbrains.kotlin.plugin.serialization" version "$kotlin_version"
-    id "java-library"
-    id "maven-publish"
 }
 
-group "pl.brightinventions"
-version "1.0.1"
-
-publishing {
-    publications {
-        register("default", MavenPublication.class) {
-            it.from(components.java)
-        }
+allprojects {
+    repositories {
+        mavenCentral()
+        maven { setUrl("https://jitpack.io/") }
     }
-}
 
-java {
-    withJavadocJar()
-    withSourcesJar()
-}
-
-repositories {
-    mavenCentral()
-    maven { setUrl("https://dl.bintray.com/brightinventions/maven") }
-}
-
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = "1.6"
-    }
-}
-
-test {
-    useJUnitPlatform()
-    testLogging.events.addAll([TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED])
+    group "pl.brightinventions"
+    version "1.0.1"
 }
 
 dependencies {
-    api "org.jetbrains.kotlin:kotlin-stdlib"
-    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1"
-    testImplementation "pl.miensol.shouldko:hamcrest:0.2.2"
-    testImplementation "org.junit.jupiter:junit-jupiter:5.6.2"
+    api 'org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.2.2'
 }

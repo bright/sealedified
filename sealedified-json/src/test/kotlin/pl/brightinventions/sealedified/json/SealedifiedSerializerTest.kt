@@ -1,13 +1,15 @@
-@file:UseSerializers(SealedifiedSerializer::class)
+package pl.brightinventions.sealedified.json
 
-package pl.brightinventions.sealedified
-
-import kotlinx.serialization.*
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import pl.brightinventions.sealedified.Sealedified
 import pl.miensol.shouldko.shouldEqual
 
 internal class SealedifiedSerializerTest {
@@ -23,21 +25,18 @@ internal class SealedifiedSerializerTest {
         @SerialName("orange")
         data class Orange(val owner: String?) : Fruit()
 
-        @Serializable
-        @SerialName("tree")
-        data class Tree(
-            val age: Int,
-            val fruits: List<Sealedified<Fruit>>
-        ) : Fruit()
-
-        object SealedifiedSerializer : KSerializer<Sealedified<Fruit>> by sealedifiedSerializer(serializer())
+        object SealedifiedSerializer :
+            KSerializer<Sealedified<Fruit, JsonObject>> by SealedifiedJsonSerializer(serializer())
     }
 
     @Serializable
-    private data class FruitWrapper(val fruit: Sealedified<Fruit>?)
+    private data class FruitWrapper(
+        @Serializable(with = Fruit.SealedifiedSerializer::class)
+        val fruit: Sealedified<Fruit, JsonObject>?
+    )
 
     private val apple = Fruit.Apple(5)
-    private val appleSealedified: Sealedified<Fruit> = Sealedified.Known(apple)
+    private val appleSealedified: Sealedified<Fruit, JsonObject> = Sealedified.Known(apple)
     private val appleSerialized =
         """
             {
@@ -46,7 +45,7 @@ internal class SealedifiedSerializerTest {
             }
         """.trimIndent()
 
-    private val unknownFruit = Sealedified.Unknown<Fruit>(
+    private val unknownFruit = UnknownJson<Fruit>(
         JsonObject(
             mapOf(
                 "type" to JsonPrimitive("banana"),
@@ -59,62 +58,6 @@ internal class SealedifiedSerializerTest {
             {
                 "type": "banana",
                 "length": 10.0
-            }
-        """.trimIndent()
-
-    private val tree: Sealedified<Fruit> = Sealedified.Known(
-        Fruit.Tree(
-            age = 100,
-            fruits = listOf(
-                Sealedified.Known(Fruit.Apple(1)),
-                Sealedified.Known(Fruit.Orange("John")),
-                Sealedified.Known(
-                    Fruit.Tree(
-                        age = 50,
-                        fruits = listOf(
-                            Sealedified.Known(Fruit.Orange(null)),
-                            unknownFruit,
-                            Sealedified.Known(Fruit.Apple(2))
-                        )
-                    )
-                )
-            )
-        )
-    )
-
-    private val treeSerialized =
-        """
-            {
-                "type": "tree",
-                "age": 100,
-                "fruits": [
-                    {
-                        "type": "apple",
-                        "size": 1
-                    },
-                    {
-                        "type": "orange",
-                        "owner": "John"
-                    },
-                    {
-                        "type": "tree",
-                        "age": 50,
-                        "fruits": [
-                            {
-                                "type": "orange",
-                                "owner": null
-                            },
-                            {
-                                "type": "banana",
-                                "length": 10.0
-                            },
-                            {
-                                "type": "apple",
-                                "size": 2
-                            }
-                        ]
-                    }
-                ]
             }
         """.trimIndent()
 
@@ -154,16 +97,6 @@ internal class SealedifiedSerializerTest {
     @Test
     fun `unknown fruit should be deserialized`() {
         json.decodeFromString(Fruit.SealedifiedSerializer, unknownFruitSerialized).shouldEqual(unknownFruit)
-    }
-
-    @Test
-    fun `tree should be serialized`() {
-        json.encodeToString(Fruit.SealedifiedSerializer, tree).shouldEqual(treeSerialized)
-    }
-
-    @Test
-    fun `tree should be deserialized`() {
-        json.decodeFromString(Fruit.SealedifiedSerializer, treeSerialized).shouldEqual(tree)
     }
 
     @Test

@@ -1,0 +1,43 @@
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+plugins {
+    id "org.jetbrains.kotlin.jvm"
+    id "org.jetbrains.kotlin.plugin.serialization"
+    id "java-library"
+    id "maven-publish"
+}
+
+group 'pl.brightinventions'
+version '1.0.1'
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.6"
+    }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging.events.addAll([TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED])
+}
+
+publishing {
+    publications {
+        register("default", MavenPublication.class) {
+            it.from(components.java)
+        }
+    }
+}
+
+dependencies {
+    api(rootProject)
+    api 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2'
+    testImplementation "com.github.miensol:shouldko:0.2.2"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+}

@@ -1,20 +1,14 @@
 package pl.brightinventions.sealedified
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonObject
-
-class SealedifiedSerializer<T : Any>(
-    private val knownSerializer: KSerializer<T>
-) : KSerializer<Sealedified<T>> {
+/*
+class SealedifiedSerializer<T : Any, U : Any>(
+    private val knownSerializer: KSerializer<T>,
+    private val unknownSerializer: KSerializer<U>
+) : KSerializer<Sealedified<T, U>> {
 
     override val descriptor: SerialDescriptor = knownSerializer.descriptor
 
-    override fun deserialize(decoder: Decoder): Sealedified<T> {
+    override fun deserialize(decoder: Decoder): Sealedified<T, U> {
         if (decoder !is JsonDecoder) {
             throw SerializationException("${SealedifiedSerializer::class.simpleName} only supports JSON serialization")
         }
@@ -23,7 +17,7 @@ class SealedifiedSerializer<T : Any>(
 
         return try {
             val known = decoder.json.decodeFromJsonElement(knownSerializer, jsonElement)
-            Sealedified.Known(known)
+            SealedifiedJson.Known(known)
         } catch (e: SerializationException) {
             if (jsonElement !is JsonObject) {
                 throw SerializationException(
@@ -31,11 +25,11 @@ class SealedifiedSerializer<T : Any>(
                     e
                 )
             }
-            Sealedified.Unknown(jsonElement)
+            SealedifiedJson.Unknown(jsonElement)
         }
     }
 
-    override fun serialize(encoder: Encoder, value: Sealedified<T>) {
+    override fun serialize(encoder: Encoder, value: Sealedified<T, U>) {
         when (value) {
             is Sealedified.Known -> encoder.encodeSerializableValue(knownSerializer, value.value)
             is Sealedified.Unknown -> encoder.encodeSerializableValue(JsonObject.serializer(), value.jsonObject)
@@ -43,5 +37,6 @@ class SealedifiedSerializer<T : Any>(
     }
 }
 
-inline fun <reified T : Any> sealedifiedSerializer(other: KSerializer<T>): KSerializer<Sealedified<T>> =
+inline fun <reified T : Any> sealedifiedSerializer(other: KSerializer<T>): KSerializer<SealedifiedJson<T>> =
     SealedifiedSerializer(other)
+*/
