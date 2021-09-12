@@ -45,14 +45,13 @@ internal class SealedifiedSerializerTest {
             }
         """.trimIndent()
 
-    private val unknownFruit = UnknownJson<Fruit>(
-        JsonObject(
-            mapOf(
-                "type" to JsonPrimitive("banana"),
-                "length" to JsonPrimitive(10.0)
-            )
+    private val unknownFruit = JsonObject(
+        mapOf(
+            "type" to JsonPrimitive("banana"),
+            "length" to JsonPrimitive(10.0)
         )
     )
+    private val unknownFruitSealedified: Sealedified<Fruit, JsonObject> = UnknownJson(unknownFruit)
     private val unknownFruitSerialized =
         """
             {
@@ -86,17 +85,32 @@ internal class SealedifiedSerializerTest {
 
     @Test
     fun `apple should be deserialized`() {
-        json.decodeFromString(Fruit.SealedifiedSerializer, appleSerialized).shouldEqual(appleSealedified)
+        with(json.decodeFromString(Fruit.SealedifiedSerializer, appleSerialized)) {
+            shouldEqual(appleSealedified)
+            when (this) {
+                is Sealedified.Known -> when (val knownValue = value) {
+                    is Fruit.Apple -> knownValue.size.shouldEqual(5)
+                    is Fruit.Orange -> throw AssertionError("It's supposed to be an apple")
+                }
+                is Sealedified.Unknown -> throw AssertionError("It's supposed to be known")
+            }
+        }
     }
 
     @Test
     fun `unknown fruit should be serialized`() {
-        json.encodeToString(Fruit.SealedifiedSerializer, unknownFruit).shouldEqual(unknownFruitSerialized)
+        json.encodeToString(Fruit.SealedifiedSerializer, unknownFruitSealedified).shouldEqual(unknownFruitSerialized)
     }
 
     @Test
     fun `unknown fruit should be deserialized`() {
-        json.decodeFromString(Fruit.SealedifiedSerializer, unknownFruitSerialized).shouldEqual(unknownFruit)
+        with(json.decodeFromString(Fruit.SealedifiedSerializer, unknownFruitSerialized)) {
+            shouldEqual(unknownFruitSealedified)
+            when (this) {
+                is Sealedified.Known -> throw AssertionError("It's supposed to be unknown")
+                is Sealedified.Unknown -> raw.shouldEqual(unknownFruit)
+            }
+        }
     }
 
     @Test
@@ -123,6 +137,6 @@ internal class SealedifiedSerializerTest {
 
     @Test
     fun `unknown fruit should be null`() {
-        unknownFruit.knownOrNull().shouldEqual(null)
+        unknownFruitSealedified.knownOrNull().shouldEqual(null)
     }
 }
