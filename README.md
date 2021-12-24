@@ -19,7 +19,7 @@ compatible enums serialization which is also explained
 
 First, add JitPack to your repositories block in Gradle build script.
 
-```
+```kotlin
 repositories {
     maven("https://jitpack.io")
 }
@@ -27,7 +27,7 @@ repositories {
 
 Then, add the following dependencies:
 
-```
+```kotlin
 implementation("com.github.bright.sealedified:sealedified:1.6.10")
 implementation("com.github.bright.sealedified:sealedified-json:1.6.10")
 ```
@@ -106,14 +106,13 @@ data class FruitWrapper(
 )
 ```
 
-or you can use `@file:UseSerializers` like this:
+However, if you have a collection such as `List`, remember to apply the
+annotation to `Sealedified` type - inside the collection:
 
 ```kotlin
-@file:UseSerializers(SealedifiedFruitSerializer::class)
-
 @Serializable
 data class FruitBasket(
-    val fruits: List<Sealedified<Fruit, JsonObject>>
+    val fruits: List<@Serializable(with = Fruit.SealedifiedSerializer::class) Sealedified<Fruit, JsonObject>>
 )
 ```
 
