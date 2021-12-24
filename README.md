@@ -28,8 +28,8 @@ repositories {
 Then, add the following dependencies:
 
 ```
-implementation("com.github.bright.sealedified:sealedified:1.5.32")
-implementation("com.github.bright.sealedified:sealedified-json:1.5.32")
+implementation("com.github.bright.sealedified:sealedified:1.6.10")
+implementation("com.github.bright.sealedified:sealedified-json:1.6.10")
 ```
 
 ### Exemplary usage with JSON serialization ###
